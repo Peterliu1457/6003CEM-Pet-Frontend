@@ -29,9 +29,15 @@ const LoginPage: React.FC = () => {
                 email: values.email,
                 password: values.password,
             });
-            const { token } = response.data;
+            const { token, type } = response.data;
             // show toast message
             message.success('Login successfully');
+            if (type === 'charity') {
+                router('/charity');
+            } 
+            if (type === 'adopt') {
+                router('/adopt');
+            }
             
             login(token);
         } catch (err: any) {

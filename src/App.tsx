@@ -1,11 +1,14 @@
 import React from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import SignupPage from './authpages/SignUp';
 import SignInPage from './authpages/SignIn';
 import axios from 'axios';
 import CharityDashboard from './charitypages/CharityDashboard';
 import UploadDogPage from './charitypages/UploadDog';
 import PrivateRoute from './components/PrivateRoute';
+import { DogsList } from './charitypages/DogsList';
+import Applications from './charitypages/Applications';
+import EditDog from './charitypages/EditDog';
 
 axios.defaults.baseURL = 'http://localhost:4000';
 axios.defaults.headers['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
@@ -19,6 +22,10 @@ function App() {
           <CharityDashboard/>
         </PrivateRoute>
       }>
+        <Route path='' index element={<Navigate to='dogs'/>} />
+        <Route path='applications' element={<Applications />} />
+        <Route path='dogs' element={<DogsList />} />
+        <Route path='dogs/:dogId' element={<EditDog />}/>
         <Route path='upload-dog' element={<UploadDogPage />} />
       </Route>
     </Routes>

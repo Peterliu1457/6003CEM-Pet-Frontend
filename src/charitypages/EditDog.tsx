@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Form, Input, Select, Checkbox, Button, Upload, Typography, Space, Divider, message } from 'antd';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -6,14 +6,17 @@ import { UploadOutlined } from '@ant-design/icons';
 import { breeds } from '../type/Breed';
 import axios from 'axios';
 import { IDog } from '../type/Dog';
+import { useParams } from 'react-router-dom';
+import useGetDog from '../hooks/getDog';
 
 const { Title } = Typography;
 const { Option } = Select;
 
 
-const UploadDogPage: React.FC = () => {
+const EditDog: React.FC = () => {
+  const {dogId} = useParams();  
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-
+  const { dog, loading } = useGetDog(dogId as string);  
   const formik = useFormik<IDog>({
     initialValues: {
       name: '',
@@ -31,17 +34,24 @@ const UploadDogPage: React.FC = () => {
     }),
     onSubmit: async (values) => {
       try {
-        const response = await axios.post('/api/dogs', {
+        const response = await axios.put(`/api/dogs/${dogId}`, {
             ...values,
             photos: [...previewImages]
         });
-        message.success('Dog uploaded successfully');
+        message.success('Dog updated successfully');
         
       } catch (err) {
-        message.error('Error uploading dog');
+        message.error('Error updating dog');
       }
     },
   });
+
+  useEffect(() => {
+    if (dog) {
+        formik.setValues(dog, false);
+        setPreviewImages(dog.photos);
+    }
+  }, [dog]);
 
   const handleImageUpload = (file: File) => {
     const reader = new FileReader();
@@ -53,6 +63,14 @@ const UploadDogPage: React.FC = () => {
     };
   };
 
+  if (loading) { 
+    return <div>Loading...</div>;
+  }
+
+  if (!dog) {
+    return <div>"Dog not found"</div>;
+  }
+
   return (
     <div
       style={{
@@ -60,27 +78,26 @@ const UploadDogPage: React.FC = () => {
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh',
+        overflow: 'auto'
       }}
     >
       <div style={{ width: 600, backgroundColor: 'white', padding: '40px', borderRadius: '8px' }}>
         <Title level={3} style={{ textAlign: 'center', fontFamily: 'Roboto, sans-serif' }}>
-          Add Dog
+          Edit Dog
         </Title>
         <Divider />
         <Form onFinish={formik.handleSubmit} layout='vertical'>
           <Form.Item
-            name="name"
             help={formik.errors.name}
             validateStatus={formik.errors.name ? 'error' : undefined}
           >
-            <Input placeholder="Name" value={formik.values.name} onChange={formik.handleChange} />
+            <Input name='name' placeholder="Name" value={formik.values.name} onChange={formik.handleChange} />
           </Form.Item>
           <Form.Item
-            name="age"
             help={formik.errors.age}
             validateStatus={formik.errors.age ? 'error' : undefined}
           >
-            <Input type="number" placeholder="Age" value={formik.values.age} onChange={formik.handleChange} />
+            <Input name='age' type="number" placeholder="Age" value={formik.values.age} onChange={formik.handleChange} />
           </Form.Item>
           <Form.Item name="gender" label='Gender'>
             <Select defaultValue={'male'} value={formik.values.gender} onChange={(value) => formik.setFieldValue('gender', value)}>
@@ -89,7 +106,6 @@ const UploadDogPage: React.FC = () => {
             </Select>
           </Form.Item>
           <Form.Item
-            name="breed"
             label="Dog breed"
             help={formik.errors.breed}
             validateStatus={formik.errors.breed ? 'error' : undefined}
@@ -103,20 +119,19 @@ const UploadDogPage: React.FC = () => {
               ))}
             </Select>
           </Form.Item>
-          <Form.Item name="size" label="Dog size">
+          <Form.Item  label="Dog size">
             <Select defaultValue={'small'} value={formik.values.size} onChange={(value) => formik.setFieldValue('size', value)}>
               <Option value="small">Small</Option>
               <Option value="medium">Medium</Option>
               <Option value="big">Big</Option>
             </Select>
           </Form.Item>
-          <Form.Item name="vaccine" valuePropName="checked">
+          <Form.Item valuePropName="checked">
             <Checkbox checked={formik.values.vaccine} onChange={(e) => formik.setFieldValue('vaccine', e.target.checked)}>
               Vaccinated
             </Checkbox>
           </Form.Item>
           <Form.Item
-            name="photos"
             help={formik.errors.photos}
             validateStatus={formik.errors.photos ? 'error' : undefined}
           >
@@ -133,7 +148,13 @@ const UploadDogPage: React.FC = () => {
             </Upload>
             <Space wrap>
               {previewImages.map((image, index) => (
-                <img key={index} src={image} alt={`Preview ${index}`} style={{ maxWidth: '100px' }} />
+                <div style={{display: 'flex', flexDirection: 'column'}}>
+                    <img  src={image} alt={`Preview ${index}`} style={{ maxWidth: '100px' }} />
+                    <Button type="primary" danger onClick={() => {
+                        setPreviewImages((prevImages) => prevImages.filter((_, i) => i !== index));
+                        formik.setFieldValue('photos', formik.values.photos.filter((_, i) => i !== index));
+                    }}>Remove</Button>
+                </div>
               ))}
             </Space>
           </Form.Item>
@@ -148,4 +169,4 @@ const UploadDogPage: React.FC = () => {
   );
 };
 
-export default UploadDogPage;
+export default EditDog;
